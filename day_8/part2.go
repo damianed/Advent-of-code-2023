@@ -15,13 +15,13 @@ type Node struct {
 func main() {
   lines := helper.ReadFile("input")
 
-  lf := []string{}
+  instructions := []string{}
   nodes := map[string]Node{}
   startingNodes := []string{}
   for idx, line := range lines {
     if idx == 0 {
       for _, c := range line {
-        lf = append(lf, string(c))
+        instructions = append(instructions, string(c))
       }
       continue
     }
@@ -37,50 +37,16 @@ func main() {
     }
   }
 
-  currentNodes := startingNodes
-  fmt.Println(startingNodes)
-  steps := 0
-  finished := false
-  stepsTaken := []int{}
-
-  for i := 0; i < len(currentNodes); i++ {
-    stepsTaken = append(stepsTaken, 0)
+  steps := []int{}
+  for _, node := range startingNodes {
+    steps = append(steps, moveTilEnd(node, nodes, instructions))
   }
 
-  for !finished {
-    checkPoint, endingNode := moveTilEnd(currentNodes[0], nodes, lf, steps)
-    steps = checkPoint
-    currentNodes[0] = endingNode
-
-    for idx, node := range currentNodes {
-      if idx == 0 {
-        continue
-      }
-
-      finishNode := moveTilSteps(node, nodes, lf, stepsTaken[idx], steps - stepsTaken[idx])
-      stepsTaken[idx] = steps
-      currentNodes[idx] = finishNode
-
-      if idx == 3 {
-        fmt.Println(finishNode)
-      }
-      if (finishNode[len(finishNode)-1:len(finishNode)] != "Z") {
-        break
-      }
-
-      if idx == len(currentNodes) - 1 {
-        finished = true
-      }
-    }
-
-    currentNodes[0] = moveTilSteps(currentNodes[0], nodes, lf, steps, 1)
-    steps++
-  }
-
-  fmt.Println(steps - 1)
+  fmt.Println(lcmAll(steps[0], steps[1:]...))
 }
 
-func moveTilEnd(currentNode string, nodes map[string]Node, instructions []string, steps int) (int, string) {
+func moveTilEnd(currentNode string, nodes map[string]Node, instructions []string) int {
+    steps := 0
     for currentNode[len(currentNode)-1:len(currentNode)] != "Z" {
       instruction := instructions[steps % len(instructions)]
       if (instruction == "R") {
@@ -92,20 +58,26 @@ func moveTilEnd(currentNode string, nodes map[string]Node, instructions []string
       steps++
     }
 
-    return steps, currentNode
+    return steps
 }
 
-func moveTilSteps(currentNode string, nodes map[string]Node, instructions []string, currSteps int, steps int) string {
-    for i := 0; i < steps; i++ {
-      instruction := instructions[currSteps % len(instructions)]
-      if (instruction == "R") {
-        currentNode = nodes[currentNode].right
-      } else {
-        currentNode = nodes[currentNode].left
-      }
+// gcd,lcm,lcmAll copied from:
+// https://github.com/torbensky/advent-of-code-2023/blob/main/day08/main.go#L70C1-L88C2
+func gcd(a, b int) int {
+	if b == 0 {
+		return a
+	}
+	return gcd(b, a%b)
+}
+func lcm(a, b int) int {
+	return a / gcd(a, b) * b
+}
 
-      currSteps++
-    }
+func lcmAll(a int, bs ...int) int {
+	result := a
+	for _, b := range bs {
+		result = lcm(result, b)
+	}
 
-    return currentNode
+	return result
 }
